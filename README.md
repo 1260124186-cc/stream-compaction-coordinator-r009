@@ -120,6 +120,12 @@ GET /v1/compaction-plans/{plan_id}
 GET /v1/healthz
 ```
 
+Segments are listed in a stable order (base offset, then identifier). The
+`after` cursor must identify a segment inside the requested stream and the
+current `states` filter; an unknown, foreign-stream, or filtered-out cursor
+is rejected with `invalid_input` (400) instead of silently restarting at the
+first page.
+
 Administrative recovery can be requested again after startup:
 
 ```text

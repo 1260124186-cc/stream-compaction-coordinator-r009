@@ -18,6 +18,10 @@
     {
       "workflow_id": "replica-watermark",
       "command": "go run ./cmd/segmentd verify replica-watermark"
+    },
+    {
+      "workflow_id": "segment-pagination",
+      "command": "go run ./cmd/segmentd verify segment-pagination"
     }
   ]
 }

@@ -16,6 +16,7 @@ var checks = map[string]checkFunc{
 	"append-rollover":     runAppendRollover,
 	"compaction-recovery": runCompactionRecovery,
 	"replica-watermark":   runReplicaWatermark,
+	"segment-pagination":  runSegmentPagination,
 }
 
 func Run(ctx context.Context, workflow string) (Result, error) {

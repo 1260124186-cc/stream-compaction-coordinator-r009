@@ -19,9 +19,15 @@ type SegmentFilter struct {
 	Limit    int
 }
 
-func ListSegments(state *domain.State, filter SegmentFilter) []*domain.Segment {
+// ListSegments returns the filtered segments in a stable order
+// (base offset, then identifier). A non-empty AfterID cursor is resolved
+// against that same filtered, ordered set; a cursor that does not identify a
+// segment inside it — unknown, belonging to another stream, or excluded by
+// the state filter — is rejected with a stable error instead of silently
+// restarting from the first page.
+func ListSegments(state *domain.State, filter SegmentFilter) ([]*domain.Segment, error) {
 	if state == nil {
-		return []*domain.Segment{}
+		return []*domain.Segment{}, nil
 	}
 	result := make([]*domain.Segment, 0)
 	for _, segment := range state.Segments {
@@ -48,19 +54,27 @@ func ListSegments(state *domain.State, filter SegmentFilter) []*domain.Segment {
 		return result[left].Range.BaseOffset < result[right].Range.BaseOffset
 	})
 	if filter.AfterID != "" {
-		start := 0
+		start := -1
 		for index, segment := range result {
 			if segment.ID == filter.AfterID {
 				start = index + 1
 				break
 			}
 		}
+		if start < 0 {
+			return nil, domain.NewError(
+				domain.CodeInvalidInput,
+				"after cursor does not match a segment in this filtered result",
+			).
+				WithDetail("after", filter.AfterID).
+				WithDetail("stream_id", filter.StreamID)
+		}
 		result = result[start:]
 	}
 	if filter.Limit > 0 && len(result) > filter.Limit {
 		result = result[:filter.Limit]
 	}
-	return result
+	return result, nil
 }
 
 func FindStreamByName(state *domain.State, namespace, name string) *domain.Stream {
