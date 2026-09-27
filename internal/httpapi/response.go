@@ -37,7 +37,8 @@ func mapError(err error) (int, errorBody) {
 	if errors.As(err, &domainErr) {
 		status := http.StatusInternalServerError
 		switch domainErr.Code {
-		case domain.CodeInvalidInput, domain.CodeInvalidRange, domain.CodeOverflow:
+		case domain.CodeInvalidInput, domain.CodeInvalidRange, domain.CodeOverflow,
+			domain.CodeInvalidCursor:
 			status = http.StatusBadRequest
 		case domain.CodeNotFound:
 			status = http.StatusNotFound

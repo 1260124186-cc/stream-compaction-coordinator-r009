@@ -17,6 +17,7 @@ const (
 	CodeDuplicate          ErrorCode = "duplicate"
 	CodeOverflow           ErrorCode = "overflow"
 	CodeLimitExceeded      ErrorCode = "limit_exceeded"
+	CodeInvalidCursor      ErrorCode = "invalid_cursor"
 	CodePersistenceFailure ErrorCode = "persistence_failure"
 	CodeInconsistentState  ErrorCode = "inconsistent_state"
 )

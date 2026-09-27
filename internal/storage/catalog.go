@@ -19,9 +19,9 @@ type SegmentFilter struct {
 	Limit    int
 }
 
-func ListSegments(state *domain.State, filter SegmentFilter) []*domain.Segment {
+func ListSegments(state *domain.State, filter SegmentFilter) ([]*domain.Segment, error) {
 	if state == nil {
-		return []*domain.Segment{}
+		return []*domain.Segment{}, nil
 	}
 	result := make([]*domain.Segment, 0)
 	for _, segment := range state.Segments {
@@ -48,19 +48,44 @@ func ListSegments(state *domain.State, filter SegmentFilter) []*domain.Segment {
 		return result[left].Range.BaseOffset < result[right].Range.BaseOffset
 	})
 	if filter.AfterID != "" {
-		start := 0
+		start := -1
 		for index, segment := range result {
 			if segment.ID == filter.AfterID {
 				start = index + 1
 				break
 			}
 		}
+		if start < 0 {
+			return nil, invalidCursorError(state, filter)
+		}
 		result = result[start:]
 	}
 	if filter.Limit > 0 && len(result) > filter.Limit {
 		result = result[:filter.Limit]
 	}
-	return result
+	return result, nil
+}
+
+// invalidCursorError builds a stable error for an after cursor that cannot be
+// interpreted within the filtered, ordered segment set. A cursor may be
+// unknown, belong to another stream, or belong to a segment that no longer
+// matches the active state filter.
+func invalidCursorError(state *domain.State, filter SegmentFilter) error {
+	cursor := state.Segments[filter.AfterID]
+	switch {
+	case cursor == nil:
+		return domain.NewError(domain.CodeInvalidCursor, "pagination cursor does not identify a segment").
+			WithDetail("after", filter.AfterID)
+	case filter.StreamID != "" && cursor.StreamID != filter.StreamID:
+		return domain.NewError(domain.CodeInvalidCursor, "pagination cursor belongs to another stream").
+			WithDetail("after", filter.AfterID).
+			WithDetail("stream_id", cursor.StreamID)
+	default:
+		return domain.NewError(
+			domain.CodeInvalidCursor,
+			"pagination cursor is not part of the filtered segment set",
+		).WithDetail("after", filter.AfterID)
+	}
 }
 
 func FindStreamByName(state *domain.State, namespace, name string) *domain.Stream {

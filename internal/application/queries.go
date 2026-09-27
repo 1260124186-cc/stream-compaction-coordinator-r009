@@ -74,5 +74,5 @@ func (s *Service) ListSegments(
 	if filter.StreamID != "" && state.Streams[filter.StreamID] == nil {
 		return nil, resourceNotFound("stream", filter.StreamID)
 	}
-	return storage.ListSegments(state, filter), nil
+	return storage.ListSegments(state, filter)
 }
